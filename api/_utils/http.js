@@ -23,7 +23,7 @@ export async function readJson(request) {
   const chunks = [];
 
   for await (const chunk of request) {
-    chunks.push(chunk);
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
 
   const rawBody = Buffer.concat(chunks).toString("utf8");

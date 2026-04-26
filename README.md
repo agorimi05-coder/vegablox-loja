@@ -20,12 +20,15 @@ BLACKCATPAY_CLIENT_ID
 BLACKCATPAY_CLIENT_SECRET
 BLACKCATPAY_API_URL
 BLACKCATPAY_STATUS_URL
+BLACKCATPAY_DEFAULT_NAME
+BLACKCATPAY_DEFAULT_CPF
 WEBHOOK_SECRET
 APP_URL
 ```
 
 `BLACKCATPAY_API_URL` pode ficar como `https://dash.blackonpay.com/v3/pix/qrcode`.
 Use `APP_URL` com o dominio final da Vercel ou dominio proprio.
+Se o checkout nao pedir CPF, configure `BLACKCATPAY_DEFAULT_CPF` com o documento aprovado no seu gateway.
 
 ## Endpoints
 
@@ -44,11 +47,10 @@ POST /api/pix/create
 Content-Type: application/json
 
 {
-  "nome": "Nome do Cliente",
-  "cpf": "12345678909",
-  "valor": 10.9,
-  "descricao": "Pacote Vegablox",
-  "robloxUsername": "builderman"
+  "nick": "builderman",
+  "amount": 10.9,
+  "productId": "robux_pack",
+  "productName": "Pacote Vegablox"
 }
 ```
 

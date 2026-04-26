@@ -5,6 +5,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/pix",
+      "destination": "/api/pix/create"
+    },
+    {
+      "source": "/transactions/:transactionId",
+      "destination": "/api/pix/status?transactionId=:transactionId"
+    },
+    {
       "source": "/((?!api/.*).*)",
       "destination": "/"
     }

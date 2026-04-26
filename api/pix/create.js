@@ -11,13 +11,16 @@ function normalizeAmount(value) {
 }
 
 function validatePayload(payload) {
-  const nome = String(payload.nome || payload.name || "").trim();
-  const cpf = onlyDigits(payload.cpf || payload.document);
+  const robloxUsername = String(payload.robloxUsername || payload.nick || payload.username || "").trim();
+  const nome = String(payload.nome || payload.name || robloxUsername || process.env.BLACKCATPAY_DEFAULT_NAME || "Cliente Vegablox").trim();
+  const cpf = onlyDigits(payload.cpf || payload.document || process.env.BLACKCATPAY_DEFAULT_CPF);
   const valor = normalizeAmount(payload.valor || payload.amount);
-  const descricao = String(payload.descricao || payload.description || "Pedido Vegablox").trim().slice(0, 50);
+  const descricao = String(payload.descricao || payload.description || payload.productName || "Pedido Vegablox").trim().slice(0, 50);
 
   if (nome.length < 3) throw Object.assign(new Error("Nome do pagador invalido."), { statusCode: 400 });
-  if (cpf.length !== 11) throw Object.assign(new Error("CPF invalido."), { statusCode: 400 });
+  if (cpf.length !== 11) {
+    throw Object.assign(new Error("CPF invalido. Configure BLACKCATPAY_DEFAULT_CPF ou envie cpf no checkout."), { statusCode: 400 });
+  }
   if (!valor) throw Object.assign(new Error("Valor invalido."), { statusCode: 400 });
 
   return {
@@ -25,7 +28,7 @@ function validatePayload(payload) {
     cpf,
     valor,
     descricao,
-    robloxUsername: String(payload.robloxUsername || "").trim(),
+    robloxUsername,
     productId: String(payload.productId || "").trim()
   };
 }
