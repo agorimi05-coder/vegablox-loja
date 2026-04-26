@@ -4,12 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
+    "build": "node scripts/build-static.js",
     "start": "vercel dev"
-  },
-  "devDependencies": {
-    "vite": "^5.4.11"
   }
 }
