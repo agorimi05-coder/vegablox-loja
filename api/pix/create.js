@@ -1,4 +1,4 @@
-import { allowCors, publicBaseUrl, readJson, requiredEnv, sendJson } from "../_utils/http.js";
+import { allowCors, publicBaseUrl, readJson, sendJson } from "../_utils/http.js";
 
 function onlyDigits(value) {
   return String(value || "").replace(/\D/g, "");
@@ -42,8 +42,8 @@ export default async function handler(request, response) {
 
   try {
     const payload = validatePayload(await readJson(request));
-    const clientId = requiredEnv("BLACKCATPAY_CLIENT_ID");
-    const clientSecret = requiredEnv("BLACKCATPAY_CLIENT_SECRET");
+    const clientId = process.env.BLACKCATPAY_CLIENT_ID || "";
+    const clientSecret = process.env.BLACKCATPAY_CLIENT_SECRET || "";
     const apiUrl = process.env.BLACKCATPAY_API_URL || "https://dash.blackonpay.com/v3/pix/qrcode";
     const webhookSecret = process.env.WEBHOOK_SECRET || "";
 
@@ -51,14 +51,15 @@ export default async function handler(request, response) {
     if (webhookSecret) urlnoty.searchParams.set("secret", webhookSecret);
 
     const body = new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
       nome: payload.nome,
       cpf: payload.cpf,
       valor: payload.valor,
       descricao: payload.descricao,
       urlnoty: urlnoty.toString()
     });
+
+    if (clientId) body.set("client_id", clientId);
+    if (clientSecret) body.set("client_secret", clientSecret);
 
     const gatewayResponse = await fetch(apiUrl, {
       method: "POST",

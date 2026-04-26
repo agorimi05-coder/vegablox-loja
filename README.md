@@ -16,8 +16,6 @@ Base pronta para deploy na Vercel com frontend estatico e APIs serverless.
 Crie estas variaveis em Project Settings > Environment Variables:
 
 ```txt
-BLACKCATPAY_CLIENT_ID
-BLACKCATPAY_CLIENT_SECRET
 BLACKCATPAY_API_URL
 BLACKCATPAY_STATUS_URL
 BLACKCATPAY_DEFAULT_NAME
@@ -29,6 +27,7 @@ APP_URL
 `BLACKCATPAY_API_URL` pode ficar como `https://dash.blackonpay.com/v3/pix/qrcode`.
 Use `APP_URL` com o dominio final da Vercel ou dominio proprio.
 Se o checkout nao pedir CPF, configure `BLACKCATPAY_DEFAULT_CPF` com o documento aprovado no seu gateway.
+Se seu gateway exigir credenciais, adicione tambem `BLACKCATPAY_CLIENT_ID` e `BLACKCATPAY_CLIENT_SECRET`.
 
 ## Endpoints
 
