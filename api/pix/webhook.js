@@ -23,16 +23,14 @@ export default async function handler(request, response) {
   try {
     const payload = await readJson(request);
     const event = payload.requestBody || payload;
-    const data = event.data || event;
 
     return sendJson(response, 200, {
       ok: true,
       received: {
-        event: event.event || null,
-        transactionId: data.id || event.transactionId || null,
-        externalId: data.external_id || event.external_id || null,
-        status: data.status || event.status || event.statusCode?.description || null,
-        amount: data.total_amount || event.amount || null
+        transactionId: event.transactionId || null,
+        externalId: event.external_id || null,
+        status: event.status || event.statusCode?.description || null,
+        amount: event.amount || null
       }
     });
   } catch (error) {

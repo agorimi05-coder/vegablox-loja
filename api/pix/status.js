@@ -2,16 +2,19 @@ import { allowCors, sendJson } from "../_utils/http.js";
 
 function getApiBase() {
   return (
-    process.env.BUCKPAY_API_BASE_URL ||
-    "https://api.realtechdev.com.br"
+    process.env.BLACKCATPAY_API_BASE_URL ||
+    process.env.BLACKCAT_API_BASE_URL ||
+    process.env.PIX_API_URL ||
+    "https://api.blackcatpay.com.br/api"
   ).replace(/\/$/, "");
 }
 
-function getBuckpayToken() {
+function getApiKey() {
   return (
-    process.env.BUCKPAY_TOKEN ||
-    process.env.BUCKPAY_SECRET_KEY ||
-    process.env.BUCKPAY_API_KEY ||
+    process.env.BLACKCATPAY_API_KEY ||
+    process.env.BLACKCAT_API_KEY ||
+    process.env.BLACKCAT_SECRET_KEY ||
+    process.env.PIX_API_KEY ||
     ""
   );
 }
@@ -25,35 +28,30 @@ export default async function handler(request, response) {
 
   try {
     const url = new URL(request.url, `https://${request.headers.host}`);
-    const externalId = String(url.searchParams.get("transactionId") || url.searchParams.get("external_id") || "").trim();
-    if (!externalId) {
-      return sendJson(response, 400, { ok: false, error: "Informe external_id." });
+    const transactionId = String(url.searchParams.get("transactionId") || "").trim();
+    if (!transactionId) {
+      return sendJson(response, 400, { ok: false, error: "Informe transactionId." });
     }
 
-    const token = getBuckpayToken();
-    const userAgent = process.env.BUCKPAY_USER_AGENT || process.env.BUCKPAY_USERAGENT || "";
-    if (!token || !userAgent) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
       return sendJson(response, 500, {
         ok: false,
-        error: "Configure BUCKPAY_TOKEN e BUCKPAY_USER_AGENT na Vercel."
+        error: "Configure BLACKCATPAY_API_KEY, BLACKCAT_API_KEY, BLACKCAT_SECRET_KEY ou PIX_API_KEY na Vercel."
       });
     }
 
-    const gatewayResponse = await fetch(`${getApiBase()}/v1/transactions/external_id/${encodeURIComponent(externalId)}`, {
+    const gatewayResponse = await fetch(`${getApiBase()}/sales/${encodeURIComponent(transactionId)}/status`, {
       headers: {
         "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "User-Agent": userAgent
+        "X-API-Key": apiKey
       }
     });
     const gatewayPayload = await gatewayResponse.json().catch(() => ({}));
-    const data = gatewayPayload?.data || gatewayPayload || {};
 
     return sendJson(response, gatewayResponse.ok ? 200 : gatewayResponse.status, {
       ok: gatewayResponse.ok,
-      status: data.status || "unknown",
-      transactionId: data.id || null,
-      externalId,
+      status: gatewayPayload?.data?.status || gatewayPayload?.status || "unknown",
       gateway: gatewayPayload
     });
   } catch (error) {
