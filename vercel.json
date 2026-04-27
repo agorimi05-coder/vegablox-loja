@@ -5,6 +5,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/images/:path*",
+      "destination": "https://vegablox.online/images/:path*"
+    },
+    {
       "source": "/pix",
       "destination": "/api/pix/create"
     },
