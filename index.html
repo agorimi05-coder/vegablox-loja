@@ -117,6 +117,27 @@
           try {
             var url = typeof input === "string" ? input : input && input.url;
             var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+            if (method === "POST" && /(^|\/)api\/roblox-lookup(\?|$)/.test(String(url || ""))) {
+              var lookupBody = parseJsonSafely(init && init.body);
+              var lookupResponse = response.clone();
+              lookupResponse.json().then(function (payload) {
+                if (!payload || payload.ok === false || !payload.id) return;
+
+                var username = payload.username || (lookupBody && (lookupBody.username || lookupBody.nick)) || "roblox";
+                var eventId = "roblox_validated_" + payload.id;
+                if (sessionStorage.getItem(eventId)) return;
+
+                sessionStorage.setItem(eventId, "1");
+                trackMeta("InitiateCheckout", {
+                  currency: "BRL",
+                  content_name: "Roblox user validated",
+                  content_ids: [String(payload.id)],
+                  content_type: "product",
+                  search_string: username
+                }, eventId);
+              }).catch(function () {});
+            }
+
             if (method === "POST" && /(^|\/)(pix|api\/pix\/create)(\?|$)/.test(String(url || ""))) {
               var requestBody = parseJsonSafely(init && init.body);
               var cloned = response.clone();
@@ -132,13 +153,14 @@
                 var productName = (requestBody && requestBody.productName) || "Robux";
 
                 sessionStorage.setItem(eventId, "1");
-                trackMeta("InitiateCheckout", {
+                trackMeta("AddPaymentInfo", {
                   currency: "BRL",
                   value: Number.isFinite(value) ? value : 0,
                   content_name: productName,
                   content_ids: [productId],
                   content_type: "product",
-                  num_items: 1
+                  num_items: 1,
+                  payment_method: "Pix"
                 }, eventId);
               }).catch(function () {});
             }
