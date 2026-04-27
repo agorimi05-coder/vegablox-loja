@@ -16,23 +16,21 @@ Base pronta para deploy na Vercel com frontend estatico e APIs serverless.
 Crie estas variaveis em Project Settings > Environment Variables:
 
 ```txt
-BLACKCATPAY_API_KEY
-BLACKCAT_SECRET_KEY
-BLACKCATPAY_API_BASE_URL
-BLACKCATPAY_STATUS_URL
-BLACKCATPAY_DEFAULT_NAME
-BLACKCATPAY_DEFAULT_EMAIL
-BLACKCATPAY_DEFAULT_PHONE
-BLACKCATPAY_DEFAULT_STATE
-BLACKCATPAY_DEFAULT_CPF
+BUCKPAY_TOKEN
+BUCKPAY_USER_AGENT
+BUCKPAY_API_BASE_URL
+BUCKPAY_DEFAULT_NAME
+BUCKPAY_DEFAULT_EMAIL
+BUCKPAY_DEFAULT_PHONE
+BUCKPAY_DEFAULT_CPF
 WEBHOOK_SECRET
 APP_URL
 ```
 
-`BLACKCATPAY_API_BASE_URL` pode ficar como `https://api.blackcatpay.com.br/api`.
+`BUCKPAY_API_BASE_URL` pode ficar como `https://api.realtechdev.com.br`.
 Use `APP_URL` com o dominio final da Vercel ou dominio proprio.
-Se o checkout nao pedir CPF, configure `BLACKCATPAY_DEFAULT_CPF` com o documento aprovado no seu gateway.
-`BLACKCATPAY_API_KEY` ou `BLACKCAT_SECRET_KEY` e a chave da sua conta BlackCatPay. O checkout continua pedindo apenas o nick do Roblox.
+Se o checkout nao pedir CPF, configure `BUCKPAY_DEFAULT_CPF` com o documento aprovado no seu gateway.
+`BUCKPAY_TOKEN` e `BUCKPAY_USER_AGENT` sao fornecidos pelo gerente da BuckPay. O checkout continua pedindo apenas o nick do Roblox.
 
 ## Endpoints
 
