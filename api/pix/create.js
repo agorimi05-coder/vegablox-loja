@@ -44,6 +44,10 @@ function getDefaultDocument() {
   );
 }
 
+function getOrderLogWebhookUrl() {
+  return process.env.ORDER_LOG_WEBHOOK_URL || process.env.GOOGLE_SHEETS_WEBHOOK_URL || "";
+}
+
 function inferDocumentType(document) {
   return document.length > 11 ? "cnpj" : "cpf";
 }
@@ -153,6 +157,26 @@ function normalizeAttribution(payload) {
     src: source.src || "",
     sck: source.sck || ""
   };
+}
+
+async function sendOrderLog(payload) {
+  const webhookUrl = getOrderLogWebhookUrl();
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.ORDER_LOG_WEBHOOK_SECRET
+          ? { "X-Webhook-Secret": process.env.ORDER_LOG_WEBHOOK_SECRET }
+          : {})
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    console.error("ORDER LOG WEBHOOK ERROR", error);
+  }
 }
 
 function normalizeBlackcatResponse(payload, fallbackAmount) {
@@ -393,8 +417,37 @@ export default async function handler(request, response) {
       });
     }
 
+    const normalized = normalizeBlackcatResponse(gatewayPayload, payload.amount);
+
+    await sendOrderLog({
+      event: "pix_created",
+      createdAt: new Date().toISOString(),
+      transactionId: normalized.transactionId,
+      externalRef,
+      status: normalized.status || "PENDING",
+      amount: payload.amount,
+      amountCents: toCents(payload.amount),
+      productId: payload.productId,
+      productName: payload.productName,
+      robloxUsername: payload.robloxUsername,
+      fullName: payload.customerName,
+      email: payload.customerEmail,
+      phone: payload.customerPhone,
+      utm_source: payload.attribution.utm_source,
+      utm_medium: payload.attribution.utm_medium,
+      utm_campaign: payload.attribution.utm_campaign,
+      utm_content: payload.attribution.utm_content,
+      utm_term: payload.attribution.utm_term,
+      utm_id: payload.attribution.utm_id,
+      fbclid: payload.attribution.fbclid,
+      gclid: payload.attribution.gclid,
+      ttclid: payload.attribution.ttclid,
+      src: payload.attribution.src,
+      sck: payload.attribution.sck
+    });
+
     return sendJson(response, 200, {
-      ...normalizeBlackcatResponse(gatewayPayload, payload.amount),
+      ...normalized,
       meta: {
         robloxUsername: payload.robloxUsername,
         productId: payload.productId

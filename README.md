@@ -25,6 +25,8 @@ BLACKCATPAY_DEFAULT_EMAIL
 BLACKCATPAY_DEFAULT_PHONE
 BLACKCATPAY_DEFAULT_STATE
 BLACKCATPAY_DEFAULT_CPF
+ORDER_LOG_WEBHOOK_URL
+ORDER_LOG_WEBHOOK_SECRET
 WEBHOOK_SECRET
 APP_URL
 ```
@@ -33,6 +35,8 @@ APP_URL
 Use `APP_URL` com o dominio final da Vercel ou dominio proprio.
 Se o checkout nao pedir CPF, configure `BLACKCATPAY_DEFAULT_CPF` com o documento aprovado no seu gateway.
 `BLACKCATPAY_API_KEY` ou `BLACKCAT_SECRET_KEY` e a chave da sua conta BlackCatPay. O checkout continua pedindo apenas o nick do Roblox.
+`ORDER_LOG_WEBHOOK_URL` pode apontar para seu Google Apps Script para registrar Pix pendente/aprovado em planilha. Um modelo pronto fica em `docs/google-sheets-appscript.js`.
+Se quiser proteger o Apps Script por URL, coloque a URL ja com `?secret=sua_chave` e preencha o mesmo valor em `SCRIPT_SECRET` no script.
 
 ## Endpoints
 
