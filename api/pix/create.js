@@ -89,14 +89,44 @@ function findStringByKeys(source, keys) {
 }
 
 function looksLikePixCode(value) {
-  return /^000201/.test(value) || value.includes("br.gov.bcb.pix") || value.length > 80;
+  return /^000201/.test(value) || value.includes("br.gov.bcb.pix");
+}
+
+function looksLikeImageUrl(value) {
+  return /^https?:\/\//i.test(value);
 }
 
 function asDataImage(value) {
   if (!value) return "";
   if (value.startsWith("data:image")) return value;
+  if (looksLikeImageUrl(value)) return value;
   if (looksLikePixCode(value)) return "";
   return `data:image/png;base64,${value}`;
+}
+
+function normalizePixCode(value) {
+  if (!value) return "";
+  if (looksLikeImageUrl(value) || value.startsWith("data:image")) return "";
+  if (/^[A-Za-z0-9+/=]+$/.test(value) && value.length > 200 && !looksLikePixCode(value)) return "";
+  return value;
+}
+
+function normalizeAttribution(payload) {
+  const source = payload.utms || payload.utm || payload.tracking || payload.attribution || {};
+
+  return {
+    utm_source: source.utm_source || source.source || "",
+    utm_medium: source.utm_medium || source.medium || "",
+    utm_campaign: source.utm_campaign || source.campaign || "",
+    utm_content: source.utm_content || source.content || "",
+    utm_term: source.utm_term || source.term || "",
+    utm_id: source.utm_id || source.id || "",
+    fbclid: source.fbclid || "",
+    gclid: source.gclid || "",
+    ttclid: source.ttclid || "",
+    src: source.src || "",
+    sck: source.sck || ""
+  };
 }
 
 function normalizeBlackcatResponse(payload, fallbackAmount) {
@@ -112,40 +142,59 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
     data.qr_code_base64,
     data.qrCodeImage,
     data.qr_code_image,
+    data.qrCodeUrl,
+    data.qr_code_url,
+    data.imageUrl,
+    data.image,
     findStringByKeys(payload, [
       "qrCodeBase64",
       "qrCodeBase64Image",
       "qr_code_base64",
       "qrCodeImage",
-      "qr_code_image"
+      "qr_code_image",
+      "qrCodeUrl",
+      "qr_code_url",
+      "imageUrl",
+      "image"
     ])
   );
-  const code = firstString(
+  const rawCode = firstString(
     paymentData.copyPaste ||
+    paymentData.copyAndPaste ||
     paymentData.qrCode ||
     paymentData.qr_code ||
     paymentData.qrcode ||
     paymentData.qrcodeText ||
+    paymentData.qrCodeText ||
     paymentData.copy_and_paste ||
+    paymentData.copy_paste ||
     paymentData.copyPasteCode,
     data.copyPaste ||
+    data.copyAndPaste ||
     data.qrCode ||
     data.qr_code ||
     data.qrcode ||
     data.qrcodeText ||
+    data.qrCodeText ||
     data.copy_and_paste ||
+    data.copy_paste ||
     data.copyPasteCode,
     payload.copyPaste,
+    payload.copyAndPaste,
     payload.qrCode,
     payload.qr_code,
     payload.qrcode,
     payload.qrcodeText,
+    payload.qrCodeText,
     payload.copy_and_paste,
+    payload.copy_paste,
     payload.copyPasteCode,
     findStringByKeys(payload, [
       "copyPaste",
+      "copyAndPaste",
       "copyPasteCode",
       "copy_and_paste",
+      "copy_paste",
       "qrcodeText",
       "qrCodeText",
       "qrcode",
@@ -156,6 +205,7 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
       "pix_code"
     ])
   );
+  const code = normalizePixCode(rawCode);
   const base64 = asDataImage(rawQrCodeImage);
   const qrImage = base64 || (code ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}` : "");
   const transactionId =
@@ -204,6 +254,7 @@ function validatePayload(payload) {
     customerEmail,
     customerPhone,
     document,
+    attribution: normalizeAttribution(payload),
     robloxUsername,
     productId: String(payload.productId || "").trim()
   };
@@ -230,6 +281,7 @@ export default async function handler(request, response) {
 
     const urlnoty = new URL("/api/pix/webhook", publicBaseUrl(request));
     if (webhookSecret) urlnoty.searchParams.set("secret", webhookSecret);
+    const externalRef = `vegablox-${Date.now()}`;
 
     const body = {
       amount: toCents(payload.amount),
@@ -266,10 +318,25 @@ export default async function handler(request, response) {
         expiresInDays: 1
       },
       postbackUrl: urlnoty.toString(),
-      externalRef: `vegablox-${Date.now()}`,
+      externalRef,
+      utm_source: payload.attribution.utm_source,
+      utm_medium: payload.attribution.utm_medium,
+      utm_campaign: payload.attribution.utm_campaign,
+      utm_content: payload.attribution.utm_content,
+      utm_term: payload.attribution.utm_term,
+      utm_id: payload.attribution.utm_id,
+      fbclid: payload.attribution.fbclid,
+      gclid: payload.attribution.gclid,
+      ttclid: payload.attribution.ttclid,
+      src: payload.attribution.src,
+      sck: payload.attribution.sck,
+      tracking: payload.attribution,
+      attribution: payload.attribution,
       metadata: JSON.stringify({
+        externalRef,
         robloxUsername: payload.robloxUsername,
-        productId: payload.productId
+        productId: payload.productId,
+        attribution: payload.attribution
       })
     };
 
