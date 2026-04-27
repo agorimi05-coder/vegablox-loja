@@ -13,6 +13,7 @@ function getApiKey() {
   return (
     process.env.BLACKCATPAY_API_KEY ||
     process.env.BLACKCAT_API_KEY ||
+    process.env.BLACKCAT_SECRET_KEY ||
     process.env.PIX_API_KEY ||
     ""
   );
@@ -36,7 +37,7 @@ export default async function handler(request, response) {
     if (!apiKey) {
       return sendJson(response, 500, {
         ok: false,
-        error: "Configure BLACKCATPAY_API_KEY, BLACKCAT_API_KEY ou PIX_API_KEY na Vercel."
+        error: "Configure BLACKCATPAY_API_KEY, BLACKCAT_API_KEY, BLACKCAT_SECRET_KEY ou PIX_API_KEY na Vercel."
       });
     }
 
