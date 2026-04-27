@@ -67,6 +67,7 @@ function firstString(...values) {
 function findStringByKeys(source, keys) {
   if (!source || typeof source !== "object") return "";
 
+  const wantedKeys = new Set(keys.map((key) => key.toLowerCase()));
   const stack = [source];
   const seen = new Set();
 
@@ -75,8 +76,8 @@ function findStringByKeys(source, keys) {
     if (!item || typeof item !== "object" || seen.has(item)) continue;
     seen.add(item);
 
-    for (const key of keys) {
-      const value = item[key];
+    for (const [key, value] of Object.entries(item)) {
+      if (!wantedKeys.has(key.toLowerCase())) continue;
       if (typeof value === "string" && value.trim()) return value.trim();
     }
 
@@ -92,6 +93,30 @@ function looksLikePixCode(value) {
   return /^000201/.test(value) || value.includes("br.gov.bcb.pix");
 }
 
+function findPixCode(source) {
+  if (!source || typeof source !== "object") return "";
+
+  const stack = [source];
+  const seen = new Set();
+
+  while (stack.length) {
+    const item = stack.shift();
+    if (!item || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+
+    for (const value of Object.values(item)) {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (looksLikePixCode(trimmed)) return trimmed;
+      } else if (value && typeof value === "object") {
+        stack.push(value);
+      }
+    }
+  }
+
+  return "";
+}
+
 function looksLikeImageUrl(value) {
   return /^https?:\/\//i.test(value);
 }
@@ -101,6 +126,7 @@ function asDataImage(value) {
   if (value.startsWith("data:image")) return value;
   if (looksLikeImageUrl(value)) return value;
   if (looksLikePixCode(value)) return "";
+  if (!/^[A-Za-z0-9+/=]+$/.test(value) || value.length < 200) return "";
   return `data:image/png;base64,${value}`;
 }
 
@@ -203,11 +229,12 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
       "emv",
       "pixCode",
       "pix_code"
-    ])
+    ]),
+    findPixCode(payload)
   );
   const code = normalizePixCode(rawCode);
   const base64 = asDataImage(rawQrCodeImage);
-  const qrImage = base64 || (code ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}` : "");
+  const qrImage = base64 || (code ? `https://quickchart.io/qr?size=300&text=${encodeURIComponent(code)}` : "");
   const transactionId =
     data.transactionId ||
     data.id ||
@@ -222,8 +249,12 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
     amount: fromCents(data.amount, fallbackAmount),
     pix: {
       code,
-      base64,
+      base64: base64.startsWith("data:image") ? base64 : "",
       image: qrImage,
+      qrCodeBase64: base64.startsWith("data:image") ? base64 : "",
+      qrCodeImage: qrImage,
+      qrCodeUrl: qrImage,
+      copyPaste: code,
       qrcode: code,
       qrcodeText: code,
       expiresAt: paymentData.expiresAt || data.expiresAt || null
