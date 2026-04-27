@@ -56,29 +56,108 @@ function safeJsonParse(text) {
   }
 }
 
+function firstString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+
+  return "";
+}
+
+function findStringByKeys(source, keys) {
+  if (!source || typeof source !== "object") return "";
+
+  const stack = [source];
+  const seen = new Set();
+
+  while (stack.length) {
+    const item = stack.shift();
+    if (!item || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+
+    for (const key of keys) {
+      const value = item[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+
+    for (const value of Object.values(item)) {
+      if (value && typeof value === "object") stack.push(value);
+    }
+  }
+
+  return "";
+}
+
+function looksLikePixCode(value) {
+  return /^000201/.test(value) || value.includes("br.gov.bcb.pix") || value.length > 80;
+}
+
+function asDataImage(value) {
+  if (!value) return "";
+  if (value.startsWith("data:image")) return value;
+  if (looksLikePixCode(value)) return "";
+  return `data:image/png;base64,${value}`;
+}
+
 function normalizeBlackcatResponse(payload, fallbackAmount) {
   const data = payload?.data || payload || {};
   const paymentData = data?.paymentData || {};
-  const rawQrCodeImage =
+  const rawQrCodeImage = firstString(
     paymentData.qrCodeBase64 ||
     paymentData.qrCodeBase64Image ||
     paymentData.qr_code_base64 ||
     paymentData.qrCodeImage ||
-    paymentData.qr_code_image ||
-    "";
-  const code =
+    paymentData.qr_code_image,
+    data.qrCodeBase64,
+    data.qr_code_base64,
+    data.qrCodeImage,
+    data.qr_code_image,
+    findStringByKeys(payload, [
+      "qrCodeBase64",
+      "qrCodeBase64Image",
+      "qr_code_base64",
+      "qrCodeImage",
+      "qr_code_image"
+    ])
+  );
+  const code = firstString(
     paymentData.copyPaste ||
     paymentData.qrCode ||
     paymentData.qr_code ||
+    paymentData.qrcode ||
+    paymentData.qrcodeText ||
+    paymentData.copy_and_paste ||
+    paymentData.copyPasteCode,
     data.copyPaste ||
     data.qrCode ||
-    "";
-  const base64 =
-    typeof rawQrCodeImage === "string" && rawQrCodeImage.startsWith("data:image")
-      ? rawQrCodeImage
-      : rawQrCodeImage
-        ? `data:image/png;base64,${rawQrCodeImage}`
-        : "";
+    data.qr_code ||
+    data.qrcode ||
+    data.qrcodeText ||
+    data.copy_and_paste ||
+    data.copyPasteCode,
+    payload.copyPaste,
+    payload.qrCode,
+    payload.qr_code,
+    payload.qrcode,
+    payload.qrcodeText,
+    payload.copy_and_paste,
+    payload.copyPasteCode,
+    findStringByKeys(payload, [
+      "copyPaste",
+      "copyPasteCode",
+      "copy_and_paste",
+      "qrcodeText",
+      "qrCodeText",
+      "qrcode",
+      "qr_code",
+      "brCode",
+      "emv",
+      "pixCode",
+      "pix_code"
+    ])
+  );
+  const base64 = asDataImage(rawQrCodeImage);
+  const qrImage = base64 || (code ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}` : "");
   const transactionId =
     data.transactionId ||
     data.id ||
@@ -94,7 +173,9 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
     pix: {
       code,
       base64,
-      image: base64,
+      image: qrImage,
+      qrcode: code,
+      qrcodeText: code,
       expiresAt: paymentData.expiresAt || data.expiresAt || null
     },
     transaction: payload
