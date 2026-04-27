@@ -235,6 +235,7 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
   const code = normalizePixCode(rawCode);
   const base64 = asDataImage(rawQrCodeImage);
   const qrImage = base64 || (code ? `https://quickchart.io/qr?size=300&text=${encodeURIComponent(code)}` : "");
+  const imageBase64 = base64.startsWith("data:image") ? base64 : undefined;
   const transactionId =
     data.transactionId ||
     data.id ||
@@ -249,11 +250,11 @@ function normalizeBlackcatResponse(payload, fallbackAmount) {
     amount: fromCents(data.amount, fallbackAmount),
     pix: {
       code,
-      base64: base64.startsWith("data:image") ? base64 : "",
-      image: qrImage,
-      qrCodeBase64: base64.startsWith("data:image") ? base64 : "",
-      qrCodeImage: qrImage,
-      qrCodeUrl: qrImage,
+      base64: imageBase64,
+      image: qrImage || undefined,
+      qrCodeBase64: imageBase64,
+      qrCodeImage: qrImage || undefined,
+      qrCodeUrl: qrImage || undefined,
       copyPaste: code,
       qrcode: code,
       qrcodeText: code,
