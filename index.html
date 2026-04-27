@@ -67,6 +67,95 @@
     document.head.appendChild(a);
   </script>
 
+  <!-- Meta Pixel checkout events -->
+  <script>
+    (function () {
+      function trackMeta(eventName, payload, eventId) {
+        if (typeof window.fbq !== "function") return;
+
+        if (eventId) {
+          window.fbq("track", eventName, payload, { eventID: eventId });
+          return;
+        }
+
+        window.fbq("track", eventName, payload);
+      }
+
+      function parseJsonSafely(value) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      }
+
+      function trackSuccessfulPurchasePage() {
+        var path = window.location.pathname;
+        if (path !== "/success" && path !== "/success-final") return;
+
+        var params = new URLSearchParams(window.location.search);
+        var orderId = params.get("id") || params.get("transactionId") || params.get("externalId") || "success";
+        var eventId = "purchase_" + orderId;
+        if (sessionStorage.getItem(eventId)) return;
+
+        var value = Number(params.get("value") || params.get("amount") || 0);
+        sessionStorage.setItem(eventId, "1");
+        trackMeta("Purchase", {
+          currency: "BRL",
+          value: Number.isFinite(value) ? value : 0,
+          content_name: params.get("product") || "Robux",
+          content_ids: [params.get("pid") || params.get("productId") || "robux"],
+          content_type: "product"
+        }, eventId);
+      }
+
+      var originalFetch = window.fetch;
+      if (typeof originalFetch === "function") {
+        window.fetch = async function (input, init) {
+          var response = await originalFetch.apply(this, arguments);
+
+          try {
+            var url = typeof input === "string" ? input : input && input.url;
+            var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+            if (method === "POST" && /(^|\/)(pix|api\/pix\/create)(\?|$)/.test(String(url || ""))) {
+              var requestBody = parseJsonSafely(init && init.body);
+              var cloned = response.clone();
+              cloned.json().then(function (payload) {
+                if (!payload || payload.ok === false) return;
+
+                var transactionId = payload.localIdentifier || payload.transactionId || (payload.transaction && payload.transaction.transactionId);
+                var eventId = "pix_" + (transactionId || Date.now());
+                if (sessionStorage.getItem(eventId)) return;
+
+                var value = Number((requestBody && (requestBody.amount || requestBody.valor)) || payload.amount || 0);
+                var productId = (requestBody && requestBody.productId) || (payload.meta && payload.meta.productId) || "robux";
+                var productName = (requestBody && requestBody.productName) || "Robux";
+
+                sessionStorage.setItem(eventId, "1");
+                trackMeta("InitiateCheckout", {
+                  currency: "BRL",
+                  value: Number.isFinite(value) ? value : 0,
+                  content_name: productName,
+                  content_ids: [productId],
+                  content_type: "product",
+                  num_items: 1
+                }, eventId);
+              }).catch(function () {});
+            }
+          } catch {}
+
+          return response;
+        };
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", trackSuccessfulPurchasePage);
+      } else {
+        trackSuccessfulPurchasePage();
+      }
+    })();
+  </script>
+
   <script async type="e836770f11a6687bd877fa7b-module" crossorigin src="https://vegablox.online/assets/DuOh4g7C.js"></script>
   <link rel="stylesheet" crossorigin href="https://vegablox.online/assets/DeJkg1jG.css">
 </head>
