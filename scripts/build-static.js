@@ -12,4 +12,9 @@ if (existsSync(imagesDir)) {
   cpSync(imagesDir, resolve(dist, "images"), { recursive: true });
 }
 
+const assetsDir = resolve(root, "assets");
+if (existsSync(assetsDir)) {
+  cpSync(assetsDir, resolve(dist, "assets"), { recursive: true });
+}
+
 console.log("Static build created at dist");
